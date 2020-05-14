@@ -11,19 +11,19 @@ public class Player {
     }
 
     public void move_up() {
-        this.yPos = yPos + speed;
+        this.yPos = yPos - speed;
     }
 
     public void move_down() {
-
+        this.yPos = yPos + speed;
     }
 
     public void move_left() {
-
+        this.xPos = xPos - speed;
     }
 
     public void move_right() {
-
+        this.xPos = xPos + speed;
     }
 
     public int getxPos() {
