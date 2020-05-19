@@ -3,11 +3,13 @@ public class Player {
     private int xPos;
     private int yPos;
     private int speed;
+    private String name;
 
-    public Player(int xPos, int yPos, int speed) {
+    public Player(String name, int xPos, int yPos, int speed) {
         this.xPos = xPos;
         this.yPos = yPos;
         this.speed = speed;
+        this.name = name;
     }
 
     public void move_up() {
@@ -37,4 +39,6 @@ public class Player {
     public int getSpeed() {
         return speed;
     }
+
+    public String getName() { return name; }
 }
