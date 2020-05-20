@@ -7,11 +7,11 @@ public class Game {
 
     public Game() {
         this.players = new HashMap<String, Player>();
-        //TODO: List of Items
         this.items = new ArrayList<ArrayList<Integer>>();
-        //TODO: Timer? -> Yes for Items
+
+        //Timer for item spawns below
         Timer timer = new Timer();
-        timer.schedule(new ItemSpawn(), 0, 8000);
+        timer.schedule(new ItemSpawn(), 0, 800);
     }
 
     public void addPlayer(Player player) {
@@ -39,11 +39,10 @@ public class Game {
         return allPlayers.substring(0, allPlayers.length() - 1);
     }
 
-    //TODO: getFunction for Items
     public String getItems() {
         String allItems = "";
         for (ArrayList<Integer> item : items) {
-            allItems += item.get(0) + "-" + item.get(1) + ">";
+            allItems += item.get(0) + "-" + item.get(1) + "-" + item.get(2) + ">";
         }
 
         //TODO: Maybe make this more clean?
@@ -54,36 +53,36 @@ public class Game {
         return this.players;
     }
 
-    //TODO: getAllItemObj
     public ArrayList<ArrayList<Integer>> getAllItemObj() { return this.items; }
 
-    //TODO: Add Item
     public void addItem(ArrayList<Integer> item) {
         items.add(item);
     }
-    //TODO: Remove Item
+
     public void removeItem(int index) {
         items.remove(index);
     }
-    //TODO: Item Spawn with timer
 }
 
 class ItemSpawn extends TimerTask {
     public void run() {
-        //TODO: Set spawn limit of items
-        if (Server.game.getAllItemObj().size() < 3) {
+
+        if (Server.game.getAllItemObj().size() < 300) {
             ArrayList<Integer> item = new ArrayList<Integer>();
 
-            //TODO: randomise this
-            int xPos = 550;
-            int yPos = 550;
+            //Randomize spawn of items
+            Random randomizer = new Random();
+            int xPos = 100 + randomizer.nextInt(16) * 50;
+            int yPos = 50 + randomizer.nextInt(13) * 50;
+            int shape = randomizer.nextInt(2);
 
             item.add(xPos);
             item.add(yPos);
+            item.add(shape);
 
             Server.game.addItem(item);
             System.out.println("Item spawned at " + xPos + ":" + yPos);
-            String command = "item_spawn," + xPos + "," + yPos;
+            String command = "item_spawn," + xPos + "," + yPos + "," + shape;
 
             try{
                 Server.sendAll(command);

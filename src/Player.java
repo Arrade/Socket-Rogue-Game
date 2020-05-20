@@ -4,6 +4,9 @@ public class Player {
     private int yPos;
     private int speed;
     private String name;
+    private int points = 0;
+    boolean gameOver = false;
+    boolean gameWon = false;
 
     public Player(String name, int xPos, int yPos, int speed) {
         this.xPos = xPos;
@@ -41,4 +44,18 @@ public class Player {
     }
 
     public String getName() { return name; }
+
+    public int getPoints() { return points; }
+
+    //handles point gain for player
+    public void gainPoint() {
+        if (points < 10) {
+            points++;
+        } else {
+            this.gameOver = true;
+        }
+    }
+    public void gameWin() {
+        this.gameWon = true;
+    }
 }

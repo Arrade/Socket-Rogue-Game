@@ -1,6 +1,9 @@
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,33 +16,38 @@ public class Client extends JFrame {
     static DataOutputStream outputStream;
 
     GameScreen gameScreen;
-    Player player;// = new Player("testName",400,400, 50);
+    Player player;
     HashMap<String, Player> players = new HashMap<String, Player>();
 
     public Client() {
-        //TODO: Add Super with game name
+
+        super("Collecting Frenzy");
+
+        //Attempt to connect or throw exception
         try {
             System.out.println("Client Started");
+            //Setup socket
             final Socket s = new Socket("localhost", 4999);
 
+            //Setup inputstream
             inputStream = new DataInputStream(s.getInputStream());
 
-            //gameScreen = new GameScreen(player, players);
-
+            //steps to prepare game
             initializeGame();
 
+            //Setup inputstream
             outputStream = new DataOutputStream(s.getOutputStream());
 
+            //listens to keyInputs
             addKeyListener(new KeyInput());
 
             String input;
+            //Continously listens to inputstreams
             while (true) {
                 input = inputStream.readUTF();
 
-                // TODO: handle events from inputStream
                 eventHandler(input);
 
-                // TODO: reDraw the gameScreen
                 gameScreen.repaint();
             }
         } catch (Exception e) {
@@ -54,8 +62,8 @@ public class Client extends JFrame {
 
     public void initializeGame() throws IOException {
         String playerID = inputStream.readUTF();
-        //System.out.println(playerID);
 
+        //initialize players
         String stringOfPlayers = inputStream.readUTF();
         String[] listOfPlayers = stringOfPlayers.split(">");
         for (String s : listOfPlayers) {
@@ -69,12 +77,12 @@ public class Client extends JFrame {
         player = players.get(playerID);
         gameScreen = new GameScreen(player, players);
 
-        //TODO: Setup readUTF for spawnable items
+        //initialize items
         String stringOfItems = inputStream.readUTF();
         String[] listOfItems = stringOfItems.split(">");
         for (String s : listOfItems) {
             String[] location = s.split("-");
-            gameScreen.itemSpawn(Integer.parseInt(location[0]), Integer.parseInt(location[1]));
+            gameScreen.itemSpawn(Integer.parseInt(location[0]), Integer.parseInt(location[1]), Integer.parseInt(location[2]));
         }
 
         gameScreen.repaint();
@@ -82,51 +90,41 @@ public class Client extends JFrame {
         setSize(1000,800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
-        //TODO: Center the gameScreen on startup
-        add(gameScreen);
+        add(gameScreen, BorderLayout.CENTER);
+
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                try {
+                    outputStream.writeUTF("exit");
+                } catch (IOException eIO) {
+                    eIO.printStackTrace();
+                }
+            }
+        });
 
     }
 
-    //TODO: change to outputStreams from prints
+    //Key input listener
     private class KeyInput extends KeyAdapter {
         @Override
         public void keyPressed(KeyEvent e) {
             try {
             switch (e.getKeyChar()) {
                 case 'w':
-                    try {outputStream.writeUTF("move_up"); } catch (IOException ioe) { ioe.printStackTrace(); }
-                    //outputStream.writeUTF("move_up");
-                    //System.out.println("up");
-                    /*if(!(gameScreen.y - 50 <= 0)) {
-                        gameScreen.y = gameScreen.y - 50;
-                        gameScreen.repaint();
-                    }*/
+                    try {outputStream.writeUTF("move_up"); }
+                    catch (IOException ioe) { ioe.printStackTrace(); }
                     break;
                 case 's':
-                    try {outputStream.writeUTF("move_down"); } catch (IOException ioe) { ioe.printStackTrace(); }
-                    //outputStream.writeUTF("move_down");
-                    //System.out.println("down");
-                    /*if(!(gameScreen.y + 50 >= 700)) {
-                        gameScreen.y = gameScreen.y + 50;
-                        gameScreen.repaint();
-                    }*/
+                    try {outputStream.writeUTF("move_down"); }
+                    catch (IOException ioe) { ioe.printStackTrace(); }
                     break;
                 case 'a':
-                    try {outputStream.writeUTF("move_left"); } catch (IOException ioe) { ioe.printStackTrace(); }
-                    //outputStream.writeUTF("move_left");
-                    //System.out.println("left");
-                    /*if(!(gameScreen.x - 50 <= 50)) {
-                        gameScreen.x = gameScreen.x - 50;
-                        gameScreen.repaint();
-                    }*/
+                    try {outputStream.writeUTF("move_left"); }
+                    catch (IOException ioe) { ioe.printStackTrace(); }
                     break;
                 case 'd':
-                    try {outputStream.writeUTF("move_right"); } catch (IOException ioe) { ioe.printStackTrace(); }
-                    //System.out.println("right");
-                    /*if(!(gameScreen.x + 50 >= 900)) {
-                        gameScreen.x = gameScreen.x + 50;
-                        gameScreen.repaint();
-                    }*/
+                    try {outputStream.writeUTF("move_right"); }
+                    catch (IOException ioe) { ioe.printStackTrace(); }
                     break;
                 }
             } catch (Exception ioe) {
@@ -135,14 +133,23 @@ public class Client extends JFrame {
         }
     }
 
+    public static void gameOver() throws IOException {
+        outputStream.writeUTF("game_over");
+    }
+
+    public static void gameWon() throws IOException {
+        outputStream.writeUTF("game_won");
+    }
+
+    //handles incoming events/commands
     public void eventHandler(String param) {
         String[] k = param.split(",");
         String command = k[0];
         String playerName = k[1];
         System.out.println(command);
 
-        int xPos = 400;
-        int yPos = 400;
+        int xPos;
+        int yPos;
 
         switch(command) {
             case "player_joined":
@@ -154,7 +161,6 @@ public class Client extends JFrame {
                 gameScreen.addPlayer(p);
             break;
             case "move_up":
-                //player.move_up();
                 players.get(playerName).move_up();
                 System.out.println("UP");
             break;
@@ -168,27 +174,31 @@ public class Client extends JFrame {
             break;
             case "move_right":
                 players.get(playerName).move_right();
-                System.out.println(player.getxPos());
                 System.out.println("RIGHT");
-                System.out.println(player.getxPos());
             break;
             case "pickup_item":
                 int index = Integer.parseInt(k[2]);
                 System.out.println(playerName + " picked up an item");
-                //TODO: effectFunc on payer on ItemPickup
+                players.get(playerName).gainPoint();
+                System.out.println(players.get(playerName).getPoints());
                 gameScreen.removeItem(index);
             break;
             case "item_spawn":
                 xPos = Integer.parseInt(k[1]);
                 yPos = Integer.parseInt(k[2]);
-                gameScreen.itemSpawn(xPos, yPos);
+                gameScreen.itemSpawn(xPos, yPos, Integer.parseInt(k[3]));
             break;
 
-            //TODO: Add GAME OVER / GAME WON
+            case "game_won":
+                p = players.get(playerName);
+                p.gameWin();
+                break;
+            case "game_over":
+                System.out.println("game completed by: " + playerName);
+            break;
 
             default:
-                System.out.println("END REACHED");
-                System.out.println(param);
+                System.out.println("Invalid command: " + param);
         }
     }
 }

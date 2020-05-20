@@ -36,14 +36,13 @@ public class ThreadedClient extends Thread{
         String recieved;
         game.addPlayer(new Player(playerID, xPos, yPos, 50));
         String allPlayers = game.getPlayers();
-        //TODO: get all items from game
         String allItems = game.getItems();
 
         try {
+            //Send information to corresponding Client
             outputStream.writeUTF(playerID);
             outputStream.writeUTF(allPlayers);
             outputStream.writeUTF(allItems);
-            //TODO: writeUTF allItems
             eventHandler("player_joined");
 
         } catch (IOException ioe) {
@@ -53,17 +52,36 @@ public class ThreadedClient extends Thread{
         while (true) {
             try {
 
-                //outputStream.writeUTF("move_right");
                 recieved = inputStream.readUTF();
 
-                //TODO: Fix exit
                 if (recieved.equals("exit")) {
+                    System.out.println("Client " + this.playerID + " has left");
+                    this.s.close();
+                    Server.removeThread(playerID);
+                    Server.sendAll("game_over," + this.playerID);
+                    System.out.println("Connection closed");
                     break;
                 }
 
-                //TODO: Add if statement for GAME OVER / GAME WON
+                //checking if all players have completed their game tasks
+                if (recieved.equals("game_over")) {
+                    System.out.println("Game over for " + this.playerID);
+                    HashMap<String, Player> playerObj = game.getAllPlayerObj();
+                    int i = 0;
+                    int k = 0;
+                    for (Map.Entry<String, Player> p : playerObj.entrySet()) {
+                        k++;
+                        if(p.getValue().gameOver){
+                            i++;
+                        }
+                    }
+                    if (i == k){ Server.sendAll("game_won," + playerID); }
+                }
 
-                eventHandler(recieved);
+                //As long as the player isn't done we continue to recieve events
+                if (!game.getPlayer(playerID).gameOver) {
+                    eventHandler(recieved);
+                }
 
             } catch (IOException ioe) {
                 ioe.printStackTrace();
@@ -71,6 +89,7 @@ public class ThreadedClient extends Thread{
         }
 
         try {
+            //close I/O streams
             this.inputStream.close();
             this.outputStream.close();
 
@@ -78,6 +97,7 @@ public class ThreadedClient extends Thread{
             ioe.printStackTrace();
         }
     }
+
 
     public void eventHandler(String event) throws IOException {
 
@@ -91,30 +111,37 @@ public class ThreadedClient extends Thread{
             break;
             case "move_up":
                 player = game.getPlayer(playerID);
+                //check border restrictions
                 if (!(player.getyPos() - 50 <= 0) && moveBlock(player, "move_up")) {
+                    checkItem(player);
+                    player = game.getPlayer(playerID);
                     player.move_up();
                     extraFunc("move_up,", player);
                 }
             break;
             case "move_down":
                 player = game.getPlayer(playerID);
-                //TODO: add moveBock
+                //check border restrictions
                 if (!(player.getyPos() + 50 >= 700) && moveBlock(player, "move_down")) {
+                    checkItem(player);
+                    player = game.getPlayer(playerID);
                     player.move_down();
                     extraFunc("move_down,", player);
                 }
             break;
             case "move_left":
                 player = game.getPlayer(playerID);
-                //TODO: add moveBock
+                //check border restrictions
                 if (!(player.getxPos() - 50 <= 50) && moveBlock(player, "move_left")) {
+                    checkItem(player);
+                    player = game.getPlayer(playerID);
                     player.move_left();
                     extraFunc("move_left,", player);
                 }
             break;
             case "move_right":
                 player = game.getPlayer(playerID);
-                //TODO: add moveBock
+                //check border restrictions
                 if (!(player.getxPos() + 50 >= 900) && moveBlock(player, "move_right")) {
                     checkItem(player);
                     player = game.getPlayer(playerID);
@@ -123,39 +150,38 @@ public class ThreadedClient extends Thread{
                 }
             break;
 
-            //TODO: Add case for action if needed...
-
             default:
                 System.out.println("Invalid Move");
         }
     }
 
+    //Help sending out the command to all ThreadedClients
     public void extraFunc(String cmdWord, Player player) throws IOException {
         game.updatePlayer(player);
         String command = cmdWord + playerID;
-        //send(command); //temporary
         Server.sendAll(command);
     }
 
+    //Checks if a player stepped on an item, as well as if it's the correct shape for the player
     public void checkItem(Player player) throws IOException {
         ArrayList<ArrayList<Integer>> items = game.getAllItemObj();
         int index = 0;
         for (ArrayList<Integer> item : items) {
-            if (player.getxPos() == item.get(0) && player.getyPos() == item.get(1)) {
+            System.out.println(playerID);
+            if (player.getxPos() == item.get(0) && player.getyPos() == item.get(1) && Integer.parseInt(playerID.substring(playerID.length()-1)) == item.get(2)+1) {
                 pickupItem(index, player);
                 break;
             }
             index++;
-        } //TODO: game.updatePlayer ?
+        }
         game.updatePlayer(player);
     }
 
-    //TODO: Fix this for all directions
+    //Check if the player moves into another player
     public boolean moveBlock(Player player, String move) {
         HashMap<String, Player> playerList = game.getAllPlayerObj();
         for (Map.Entry<String, Player> obj : playerList.entrySet()) {
             switch (move) {
-                //TODO: Change 50 to player speed instead
                 case "move_up":
                     if (obj.getValue().getyPos() == player.getyPos() - 50 && obj.getValue().getxPos() == player.getxPos()) {
                         return false;
@@ -181,15 +207,16 @@ public class ThreadedClient extends Thread{
         return true;
     }
 
-    //TODO: Add function for Item pickup, update game/player etc ~
+    //Handles pickup of points
     public void pickupItem(int index, Player player) throws IOException {
         game.removeItem(index);
-        //TODO: effectFunc on payer on ItemPickup
+        player.gainPoint();
         System.out.println(player.getName() + " picked up an item");
         String command = "pickup_item," + player.getName() + "," + index;
         Server.sendAll(command);
     }
 
+    //sends event to outputstream -> corresponding Client
     public void send(String event) throws IOException {
         outputStream.writeUTF(event);
     }
