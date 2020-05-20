@@ -69,6 +69,14 @@ public class Client extends JFrame {
         player = players.get(playerID);
         gameScreen = new GameScreen(player, players);
 
+        //TODO: Setup readUTF for spawnable items
+        String stringOfItems = inputStream.readUTF();
+        String[] listOfItems = stringOfItems.split(">");
+        for (String s : listOfItems) {
+            String[] location = s.split("-");
+            gameScreen.itemSpawn(Integer.parseInt(location[0]), Integer.parseInt(location[1]));
+        }
+
         gameScreen.repaint();
 
         setSize(1000,800);
@@ -164,6 +172,20 @@ public class Client extends JFrame {
                 System.out.println("RIGHT");
                 System.out.println(player.getxPos());
             break;
+            case "pickup_item":
+                int index = Integer.parseInt(k[2]);
+                System.out.println(playerName + " picked up an item");
+                //TODO: effectFunc on payer on ItemPickup
+                gameScreen.removeItem(index);
+            break;
+            case "item_spawn":
+                xPos = Integer.parseInt(k[1]);
+                yPos = Integer.parseInt(k[2]);
+                gameScreen.itemSpawn(xPos, yPos);
+            break;
+
+            //TODO: Add GAME OVER / GAME WON
+
             default:
                 System.out.println("END REACHED");
                 System.out.println(param);

@@ -27,9 +27,10 @@ public class Server {
                 DataInputStream ips = new DataInputStream(s.getInputStream());
                 DataOutputStream ops = new DataOutputStream(s.getOutputStream());
 
+                //TODO: maybe randomise player spawn, EDIT: unnecessary garbage, add later
+
                 ThreadedClient t = new ThreadedClient(s, ips, ops, pID, 400, 400);
 
-                //TODO: allPlayers put
                 allPlayers.put(pID, t);
 
                 t.start();
